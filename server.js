@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 connectDb();
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:5174' || 'https://roadmapgenerator.vercel.app',
+  origin: 'https://roadmapgenerator.vercel.app',
   credentials: true,
 }));
 app.use("/api/user", require('./routes/userRoute'))
