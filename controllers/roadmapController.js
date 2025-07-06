@@ -11,17 +11,46 @@ const createRoadmap = asyncHandler(async (req, res) => {
   const { title } = req.body;
   if (!title) return res.status(400).json({ message: 'Title is required' });
 
-  const prompt = `Generate a JSON-formatted learning roadmap for the topic: "${title}".
-Group it into beginner, intermediate, and advanced levels using this structure:
+const prompt = `
+Generate ONLY valid JSON, no extra text.
+
+Create a learning roadmap for the topic: "${title}".
+It must have this exact structure:
+
 {
-  "beginner": ["Step 1", "Step 2"],
-  "intermediate": ["Step 3", "Step 4"],
-  "advanced": ["Step 5", "Step 6"]
-}`;
+  "beginner": [
+    {
+      "title": "Step title",
+      "description": "Brief description",
+      "content": ["Point 1", "Point 2"],
+      "prerequisites": ["Optional prerequisite"]
+    }
+  ],
+  "intermediate": [
+    {
+      "title": "Step title",
+      "description": "Brief description",
+      "content": ["Point 1", "Point 2"],
+      "prerequisites": ["Optional prerequisite"]
+    }
+  ],
+  "advanced": [
+    {
+      "title": "Step title",
+      "description": "Brief description",
+      "content": ["Point 1", "Point 2"],
+      "prerequisites": ["Optional prerequisite"]
+    }
+  ]
+}
+
+Do not include any explanations or text before or after the JSON.
+Output must be valid JSON.
+`;
 
   try {
     const response = await axios.post('http://localhost:11434/api/generate', {
-      model: "deepseek-coder:6.7b",
+      model: "llama3.2:1b",
       prompt: prompt,
       stream: false
     });
