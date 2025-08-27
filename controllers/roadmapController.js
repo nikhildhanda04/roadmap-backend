@@ -7,11 +7,21 @@ const axios = require("axios");
 // @desc Create a new roadmap
 // @route POST /api/roadmap/create  
 // @access Private
+// ...existing code...
+
+const MAX_ROADMAPS_PER_USER = 5; // Set your desired limit
+
 const createRoadmap = asyncHandler(async (req, res) => {
   const { title } = req.body;
   if (!title) return res.status(400).json({ message: 'Title is required' });
 
-const prompt = `
+  // Check user's current roadmap count
+  const roadmapCount = await Roadmap.countDocuments({ user: req.user._id });
+  if (roadmapCount >= MAX_ROADMAPS_PER_USER) {
+    return res.status(403).json({ message: `Limit reached: You can only create up to ${MAX_ROADMAPS_PER_USER} roadmaps.` });
+  }
+
+  const prompt = `
 Generate ONLY valid JSON, no extra text.
 
 Create a learning roadmap for the topic: "${title}".
@@ -49,21 +59,29 @@ Output must be valid JSON.
 `;
 
   try {
-    const response = await axios.post('http://localhost:11434/api/generate', {
-      model: "llama3.2:1b",
-      prompt: prompt,
-      stream: false
-    });
+    const geminiRes = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + process.env.GEMINI_API_KEY,
+      {
+        contents: [
+          {
+            parts: [
+              { text: prompt }
+            ]
+          }
+        ]
+      }
+    );
 
-    const cleaned = response.data.response.trim();
+    // Extract the model's response
+    const geminiText = geminiRes.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 
     // Try parsing the returned string as JSON
     let roadmapJSON;
     try {
-      roadmapJSON = JSON.parse(cleaned);
+      roadmapJSON = JSON.parse(geminiText);
     } catch (e) {
       // If response contains extra text, extract JSON using regex
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      const jsonMatch = geminiText.match(/\{[\s\S]*\}/);
       roadmapJSON = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
     }
 
@@ -79,10 +97,12 @@ Output must be valid JSON.
 
     res.status(201).json(newRoadmap);
   } catch (error) {
-    console.error("Ollama/DeepSeek error:", error.message);
+    console.error("Gemini API error:", error.message, error.response?.data);
     res.status(500).json({ message: "Error generating roadmap" });
   }
 });
+
+// ...existing code...
 
 // @route GET /api/roadmap
 // @access Private
