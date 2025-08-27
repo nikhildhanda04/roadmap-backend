@@ -69,7 +69,8 @@ Output must be valid JSON.
             ]
           }
         ]
-      }
+      },
+      {timeout: 20000 }
     );
 
     // Extract the model's response
@@ -97,9 +98,9 @@ Output must be valid JSON.
 
     res.status(201).json(newRoadmap);
   } catch (error) {
-    console.error("Gemini API error:", error.message, error.response?.data);
-    res.status(500).json({ message: "Error generating roadmap" });
-  }
+  console.error("Gemini API error:", error.message, error.response?.data);
+  res.status(500).json({ message: "Error generating roadmap" });
+}
 });
 
 // ...existing code...
